@@ -216,7 +216,12 @@ void PollBluetooth(PollContext& ctx) {
             t != DEVPROP_TYPE_BOOLEAN)
             conn = DEVPROP_TRUE;
         ULONG st = 0, prob = 0;
-        if (CM_Get_DevNode_Status(&st, &prob, dd.DevInst, 0) == CR_SUCCESS && (st & DN_HAS_PROBLEM)) continue;
+        // A Hands-Free node the user disabled (common, to keep A2DP stereo quality instead of the
+        // headset profile) still carries the level Windows shows in Settings > Bluetooth & devices,
+        // so only nodes with other problems are skipped.
+        if (CM_Get_DevNode_Status(&st, &prob, dd.DevInst, 0) == CR_SUCCESS && (st & DN_HAS_PROBLEM) &&
+            prob != CM_PROB_DISABLED)
+            continue;
         if (pct > 100) continue;
         auto prev = battery.find(cid);
         if (prev != battery.end() && prev->second.connected && conn == DEVPROP_FALSE) continue;  // prefer a live node
